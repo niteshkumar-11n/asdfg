@@ -52,9 +52,10 @@ Outturn and forecast row counts, coverage, forecast cadence, step size, horizon 
 
 ```text
 backend/app/       configuration, ingestion, snapshot, analytics and API
-backend/tests/     analytics and idempotent ingest checks
+backend/tests/     analytics, CORS and idempotent ingest checks
 frontend/src/      React application and shared chart/table components
-api/index.py       Vercel Flask entry point
+render.yaml        Render Blueprint specification for backend deployment
+vercel.json        Vercel deployment configuration for frontend SPA
 Dockerfile         multi-stage run-anywhere image
 compose.yaml       local Docker setup
 .github/workflows  backend, frontend and container CI
@@ -63,7 +64,42 @@ docs/              demo script and submission checklist
 
 ## Deployment
 
-Commit `backend/data/{fuelhh_wind.csv.gz,windfor.csv.gz,meta.json}` after an actual ingest and review of the Data page. Vercel uses `vercel.json`, `api/index.py`, and the committed snapshot. Set `WIND_DATA_DIR` or `ELEXON_BASE_URL` only when the deployment needs a non-default path or mirror. Heroku can run the same Dockerfile. Add the live links here after deployment.
+WindDesk is architected for clean separation between the Python analytical backend and the React SPA frontend.
+
+### 1. Deploy Backend on Render
+
+1. Push your repository to GitHub.
+2. Log in to [Render](https://render.com) and click **New +** > **Blueprint** (or **Web Service**).
+3. Connect your repository.
+4. Render will automatically detect `render.yaml` with the following configuration:
+   - **Environment**: Python
+   - **Build Command**: `pip install -r requirements.txt`
+   - **Start Command**: `gunicorn --bind 0.0.0.0:$PORT --workers 2 --timeout 120 backend.app.main:app`
+   - **Health Check Path**: `/api/health`
+   - **Environment Variables**:
+     - `PYTHON_VERSION`: `3.12.1`
+     - `WIND_DATA_DIR`: `backend/data`
+     - `CORS_ORIGINS`: `*` (or your Vercel URL once deployed)
+5. Click **Apply** / **Deploy Web Service**.
+6. Once deployed, copy your Render service URL (e.g., `https://winddesk-backend.onrender.com`).
+   - Test by opening `https://winddesk-backend.onrender.com/api/health` in your browser. It should return `{"status":"ok","data_loaded":true}`.
+
+### 2. Deploy Frontend on Vercel
+
+1. Log in to [Vercel](https://vercel.com) and click **Add New...** > **Project**.
+2. Select your repository.
+3. In **Project Settings**:
+   - **Framework Preset**: Other
+   - **Build Command**: `npm run build`
+   - **Output Directory**: `frontend/dist`
+   - **Install Command**: `npm ci`
+4. Expand **Environment Variables** and add:
+   - **Name**: `VITE_API_URL`
+   - **Value**: `https://<your-render-service-name>.onrender.com` (your Render backend URL from Step 1, without a trailing slash)
+5. Click **Deploy**.
+6. When Vercel finishes deploying, open your Vercel URL (e.g., `https://winddesk.vercel.app`). The frontend will communicate directly with your Render backend over HTTPS with CORS enabled.
+
+> **Note on Render Free Tier**: Render free instances spin down after 15 minutes of inactivity. When you first visit your Vercel app after an idle period, the backend may take 30–50 seconds to wake up (cold start). Once awake, requests respond immediately.
 
 ## Configuration
 

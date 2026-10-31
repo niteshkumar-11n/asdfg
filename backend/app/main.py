@@ -58,6 +58,26 @@ def create_app(data_dir=None, static_dir=None):
     def snapshot():
         return load_snapshot(root)
 
+    def _apply_cors(response):
+        allowed = os.getenv("CORS_ORIGINS", "*")
+        origin = request.headers.get("Origin")
+        if allowed == "*":
+            response.headers["Access-Control-Allow-Origin"] = "*"
+        elif origin:
+            origins = [o.strip() for o in allowed.split(",") if o.strip()]
+            if origin in origins or "*" in origins:
+                response.headers["Access-Control-Allow-Origin"] = origin
+        response.headers["Access-Control-Allow-Methods"] = "GET, OPTIONS, HEAD"
+        response.headers["Access-Control-Allow-Headers"] = "Content-Type, Accept, Authorization, If-None-Match"
+        response.headers["Access-Control-Max-Age"] = "86400"
+        return response
+
+    @app.before_request
+    def preflight():
+        if request.method == "OPTIONS":
+            response = app.make_default_options_response()
+            return _apply_cors(response)
+
     @app.errorhandler(FileNotFoundError)
     def missing_snapshot(error):
         return jsonify({"error": f"{error}. Run python -m backend.app.ingest from the project root.", "code": "no_data"}), 503
@@ -191,10 +211,24 @@ def create_app(data_dir=None, static_dir=None):
             return send_from_directory(static, path)
         if os.path.isfile(os.path.join(static, "index.html")):
             return send_from_directory(static, "index.html")
+        if path == "":
+            return jsonify({
+                "status": "ok",
+                "service": "WindDesk Backend API",
+                "message": "Backend service is running. Connect your frontend or use the API endpoints.",
+                "endpoints": {
+                    "health": "/api/health",
+                    "meta": "/api/meta",
+                    "decision": "/api/decision",
+                    "accuracy": "/api/accuracy",
+                    "horizon": "/api/horizon",
+                },
+            }), 200
         return jsonify({"error": "Frontend is not built. Run npm run build from the project root."}), 404
 
     @app.after_request
-    def cache_headers(response):
+    def postprocess_response(response):
+        _apply_cors(response)
         if request.path.startswith("/api/") and response.status_code == 200:
             body = response.get_data()
             etag = hashlib.sha256(body).hexdigest()
