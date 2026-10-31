@@ -1,0 +1,13 @@
+.git
+node_modules
+.venv
+**/.venv
+frontend/dev.*
+frontend/dist
+backend/data/.ingest.lock
+backend/data/.chunks
+.uv-cache
+.uv-python
+.tmp
+__pycache__
+*.pyc

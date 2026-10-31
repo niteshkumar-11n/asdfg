@@ -1,0 +1,37 @@
+name: CI
+on: [push, pull_request]
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    env:
+      WIND_DATA_DIR: /tmp/winddesk-data
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.12'}
+      - run: pip install -r requirements.txt
+      - run: python -m backend.app.ingest --synthetic
+      - run: python -m unittest discover -s backend/tests
+      - run: python -m backend.app.ingest --offline-verify
+      - name: verify committed Elexon snapshot is unchanged
+        env:
+          WIND_DATA_DIR: backend/data
+        run: python -m backend.app.ingest --offline-verify && git diff --exit-code backend/data
+  frontend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: {node-version: 22, cache: npm}
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm run build
+  docker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker build -t winddesk .
+      - run: docker run --rm -d --name winddesk -p 8000:8000 winddesk
+      - run: sleep 5 && curl -fsS localhost:8000/api/health && curl -fsS localhost:8000/ | grep -q 'WindDesk'
+      - if: always()
+        run: docker rm -f winddesk || true

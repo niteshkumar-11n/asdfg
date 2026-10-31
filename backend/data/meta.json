@@ -1,0 +1,27 @@
+{
+  "content_hash": "da98cd417accc404449077d4d4ef63ab0920c221ac007e4415eec0ee7ef94c48",
+  "files": {
+    "fuelhh_wind.csv.gz": "4a5a398959309e8b2b15ce8d9413f3e9766cb6ca6532b9aafd7c79cf3d3e46eb",
+    "windfor.csv.gz": "54a096c9bbe422a20ae2498e170810968877f2f3b0fcb2eaca15985fc3df30d2"
+  },
+  "ingested_at": "2026-10-25T17:26:02.015272+00:00",
+  "qa": {
+    "duplicates": 0,
+    "invalid_time": 0,
+    "invalid_value": 0,
+    "wrong_fuel": 0
+  },
+  "rows": {
+    "forecast": 20440,
+    "outturn": 1536
+  },
+  "schema_version": 1,
+  "source": "elexon",
+  "synthetic": false,
+  "window": {
+    "actual_from": "2026-01-01",
+    "actual_to": "2026-02-01",
+    "decision_from": "2026-01-01",
+    "decision_to": "2026-01-31"
+  }
+}

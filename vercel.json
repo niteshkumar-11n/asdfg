@@ -1,0 +1,1 @@
+{"version":2,"buildCommand":"npm run build","outputDirectory":"frontend/dist","functions":{"api/index.py":{"includeFiles":"backend/data/**,backend/app/**"}},"rewrites":[{"source":"/api/(.*)","destination":"/api/index"},{"source":"/(.*)","destination":"/index.html"}]}
