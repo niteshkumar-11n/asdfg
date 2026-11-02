@@ -1,26 +1,23 @@
 import { useEffect, useState } from 'react';
-import { apiUrl } from '../config';
 
 const apiCache = new Map<string, unknown>();
 
-export function useApi<T>(path: string | null) {
-  const fullUrl = path ? apiUrl(path) : null;
-
+export function useApi<T>(url: string | null) {
   const [state, setState] = useState<{ data: T | null; error: string; loading: boolean }>(() => ({
-    data: fullUrl ? (apiCache.get(fullUrl) as T | undefined) ?? null : null,
+    data: url ? (apiCache.get(url) as T | undefined) ?? null : null,
     error: '',
-    loading: Boolean(fullUrl),
+    loading: Boolean(url),
   }));
 
   useEffect(() => {
-    if (!fullUrl) {
+    if (!url) {
       setState({ data: null, error: '', loading: false });
       return;
     }
-    const cached = apiCache.get(fullUrl) as T | undefined;
+    const cached = apiCache.get(url) as T | undefined;
     const controller = new AbortController();
     setState((old) => ({ data: cached ?? old.data, error: '', loading: !cached }));
-    fetch(fullUrl, { signal: controller.signal, headers: { Accept: 'application/json' } })
+    fetch(url, { signal: controller.signal, headers: { Accept: 'application/json' } })
       .then(async (response) => {
         const text = await response.text();
         let body: any;
@@ -33,7 +30,7 @@ export function useApi<T>(path: string | null) {
         return body as T;
       })
       .then((data) => {
-        apiCache.set(fullUrl, data);
+        apiCache.set(url, data);
         setState({ data, error: '', loading: false });
       })
       .catch((error: Error) => {
@@ -41,11 +38,11 @@ export function useApi<T>(path: string | null) {
           setState((old) => ({ ...old, error: error.message, loading: false }));
       });
     return () => controller.abort();
-  }, [fullUrl]);
+  }, [url]);
 
   const retry = () => {
-    if (fullUrl) {
-      apiCache.delete(fullUrl);
+    if (url) {
+      apiCache.delete(url);
       setState({ data: null, error: '', loading: true });
     }
   };

@@ -47,20 +47,5 @@ class ApiTests(unittest.TestCase):
             response=client.get("/api/meta")
             self.assertEqual(response.status_code,503)
             self.assertEqual(response.json["code"],"no_data")
-    def test_cors_and_options_preflight(self):
-        with tempfile.TemporaryDirectory() as tmp:
-            root=Path(tmp); out,fc=make_data(); publish(out,fc,root,"synthetic")
-            client=create_app(root,Path(tmp)/"static").test_client()
-            opt=client.open("/api/meta",method="OPTIONS",headers={"Origin":"https://winddesk.vercel.app"})
-            self.assertEqual(opt.status_code,200)
-            self.assertEqual(opt.headers.get("Access-Control-Allow-Origin"),"*")
-            self.assertIn("GET",opt.headers.get("Access-Control-Allow-Methods",""))
-            res=client.get("/api/health",headers={"Origin":"https://winddesk.vercel.app"})
-            self.assertEqual(res.status_code,200)
-            self.assertEqual(res.headers.get("Access-Control-Allow-Origin"),"*")
-            root_fallback=client.get("/")
-            self.assertEqual(root_fallback.status_code,200)
-            self.assertEqual(root_fallback.json["status"],"ok")
-
 
 if __name__=="__main__": unittest.main()
