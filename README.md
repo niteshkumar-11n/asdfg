@@ -32,6 +32,7 @@ npm.cmd run dev
 
 Open http://localhost:8000/api/health first; it should return `"status":"ok"` and `"data_loaded":true`. Then open http://localhost:5173. The front end proxies `/api` to Flask, so both processes must stay running. If health says `data_loaded:false`, run `python -m backend.app.ingest` from the project root; if health cannot be reached, start the API terminal command above. `npm.cmd` avoids PowerShell's script execution policy blocking `npm.ps1`.
 
+
 The Flask root route serves the dashboard when `frontend/dist` has been built. To serve it through Flask instead, run `npm run build` from the project root first, then open http://localhost:8000. The API remains available at `/api/health` either way.
 
 ## Docker
